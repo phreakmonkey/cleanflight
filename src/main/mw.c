@@ -614,6 +614,18 @@ void processRx(void)
         DISABLE_FLIGHT_MODE(ANGLE_MODE); // failsafe support
     }
 
+    if (IS_RC_MODE_ACTIVE(BOXVTHRUST)) {
+        if (!FLIGHT_MODE(VTHRUST_MODE)) {
+            if (!FLIGHT_MODE(ANGLE_MODE)) pidResetErrorAngle();
+            ENABLE_FLIGHT_MODE(VTHRUST_MODE);
+        }
+    } else {
+        if (FLIGHT_MODE(VTHRUST_MODE)) {
+          rcCommand[4] = 0;  // Center thrust axis
+          DISABLE_FLIGHT_MODE(VTHRUST_MODE);
+        }
+    }
+
     if (IS_RC_MODE_ACTIVE(BOXHORIZON) && canUseHorizonMode) {
 
         DISABLE_FLIGHT_MODE(ANGLE_MODE);

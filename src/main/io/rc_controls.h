@@ -43,6 +43,7 @@ typedef enum {
     BOXTELEMETRY,
     BOXAUTOTUNE,
     BOXSONAR,
+    BOXVTHRUST,
     CHECKBOX_ITEM_COUNT
 } boxId_e;
 
@@ -136,7 +137,7 @@ typedef struct controlRateConfig_s {
     uint16_t tpa_breakpoint;                // Breakpoint where TPA is activated
 } controlRateConfig_t;
 
-extern int16_t rcCommand[4];
+extern int16_t rcCommand[5];  // rcCommand[4] becomes VTHRUST - KCB
 
 typedef struct rcControlsConfig_s {
     uint8_t deadband;                       // introduce a deadband around the stick center for pitch and roll axis. Must be greater than zero.

@@ -339,6 +339,7 @@ static const box_t const boxes[CHECKBOX_ITEM_COUNT + 1] = {
     { BOXTELEMETRY, "TELEMETRY;", 20 },
     { BOXAUTOTUNE, "AUTOTUNE;", 21 },
     { BOXSONAR, "SONAR;", 22 },
+    { BOXVTHRUST, "VTHRUST;", 23},
     { CHECKBOX_ITEM_COUNT, NULL, 0xFF }
 };
 
@@ -646,6 +647,9 @@ void mspInit(serialConfig_t *serialConfig)
         activeBoxIds[activeBoxIdCount++] = BOXHORIZON;
     }
 
+    // TODO(kcbudd): Detect custom model mode here
+    activeBoxIds[activeBoxIdCount++] = BOXVTHRUST;
+
     if (sensors(SENSOR_BARO)) {
         activeBoxIds[activeBoxIdCount++] = BOXBARO;
     }
@@ -791,9 +795,14 @@ static bool processOutCommand(uint8_t cmdMSP)
         // Serialize the flags in the order we delivered them, ignoring BOXNAMES and BOXINDEXES
         // Requires new Multiwii protocol version to fix
         // It would be preferable to setting the enabled bits based on BOXINDEX.
+        // ---
+        // The following isn't order dependent, and the flag bits are indeed
+        // based on the BOXID numbers, so I have no idea what the previous
+        // comment is on about.  - kcbudd@google.com
         junk = 0;
         tmp = IS_ENABLED(FLIGHT_MODE(ANGLE_MODE)) << BOXANGLE |
             IS_ENABLED(FLIGHT_MODE(HORIZON_MODE)) << BOXHORIZON |
+            IS_ENABLED(FLIGHT_MODE(VTHRUST_MODE)) << BOXVTHRUST |
             IS_ENABLED(FLIGHT_MODE(BARO_MODE)) << BOXBARO |
             IS_ENABLED(FLIGHT_MODE(MAG_MODE)) << BOXMAG |
             IS_ENABLED(FLIGHT_MODE(HEADFREE_MODE)) << BOXHEADFREE |

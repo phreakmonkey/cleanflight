@@ -226,7 +226,7 @@ const mixer_t mixers[] = {
     { 2, 1, mixerDualcopter },     // MIXER_DUALCOPTER
     { 1, 1, NULL },                // MIXER_SINGLECOPTER
     { 4, 0, mixerAtail4 },         // MIXER_ATAIL4
-    { 0, 0, NULL },                // MIXER_CUSTOM
+    { 3, 1, mixerTri },            // MIXER_CUSTOM
 };
 #endif
 
@@ -310,6 +310,7 @@ void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfigura
 
     servoCount = pwmOutputConfiguration->servoCount;
 
+    /*** We don't need this for the TriVect - KCB   
     if (currentMixerMode == MIXER_CUSTOM) {
         // load custom mixer into currentMixer
         for (i = 0; i < MAX_SUPPORTED_MOTORS; i++) {
@@ -320,13 +321,14 @@ void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfigura
             motorCount++;
         }
     } else {
+    ***/
         motorCount = mixers[currentMixerMode].motorCount;
         // copy motor-based mixers
         if (mixers[currentMixerMode].motor) {
             for (i = 0; i < motorCount; i++)
                 currentMixer[i] = mixers[currentMixerMode].motor[i];
         }
-    }
+    // }  - KCB
 
     // in 3D mode, mixer gain has to be halved
     if (feature(FEATURE_3D)) {
@@ -437,6 +439,24 @@ void writeServos(void)
             pwmWriteServo(1, servo[5]);
             break;
 
+        case MIXER_CUSTOM:
+            // MIXER_TRI + Vectoring Servo - KCB
+            if (mixerConfig->tri_unarmed_servo) {
+                // if unarmed flag set, we always move servo
+                pwmWriteServo(0, servo[5]);
+                pwmWriteServo(1, servo[6]);
+            } else {
+                // otherwise, only move servo when copter is armed
+                if (ARMING_FLAG(ARMED)) {
+                    pwmWriteServo(0, servo[5]);
+                    pwmWriteServo(1, servo[6]);
+                } else {
+                    pwmWriteServo(0, 0); // kill servo signal completely.
+                    pwmWriteServo(1, 0); // kill servo signal completely.
+                }
+            }
+            break;
+
         case MIXER_TRI:
             if (mixerConfig->tri_unarmed_servo) {
                 // if unarmed flag set, we always move servo
@@ -449,6 +469,7 @@ void writeServos(void)
                     pwmWriteServo(0, 0); // kill servo signal completely.
             }
             break;
+            
 
         case MIXER_FLYING_WING:
             pwmWriteServo(0, servo[3]);
@@ -597,6 +618,12 @@ void mixTable(void)
 
         case MIXER_TRI:
             servo[5] = (servoDirection(5, 1) * axisPID[YAW] * yawDirection3D) + determineServoMiddleOrForwardFromChannel(5); // REAR
+            break;
+
+        case MIXER_CUSTOM:
+            // MIXER_TRI + VECTORING SERVO
+            servo[5] = (servoDirection(5, 1) * axisPID[YAW]) + determineServoMiddleOrForwardFromChannel(5); // REAR
+            servo[6] = 1500 + (servoDirection(6, 1) * rcCommand[4]) ; // VTHRUST
             break;
 
         case MIXER_GIMBAL:

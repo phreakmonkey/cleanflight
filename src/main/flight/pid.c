@@ -663,6 +663,11 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
     for (axis = 0; axis < 3; axis++) {
         uint8_t rate = controlRateConfig->rates[axis];
 
+        if (FLIGHT_MODE(VTHRUST_MODE) && (axis == FD_PITCH)) {
+          rcCommand[4] = rcCommand[PITCH];
+          rcCommand[PITCH] = 0;
+        }
+
         // -----Get the desired angle rate depending on flight mode
         if (axis == FD_YAW) { // YAW is always gyro-controlled (MAG correction is applied to rcCommand)
             AngleRateTmp = (((int32_t)(rate + 27) * rcCommand[YAW]) >> 5);
@@ -682,14 +687,15 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
             }
 #endif
 
-            if (!FLIGHT_MODE(ANGLE_MODE)) { //control is GYRO based (ACRO and HORIZON - direct sticks control is applied to rate PID
+            if ((FLIGHT_MODE(ANGLE_MODE)) || (FLIGHT_MODE(VTHRUST_MODE) && (axis == FD_PITCH))) {
+                // it's the ANGLE mode - control is angle based, so control loop is needed
+                AngleRateTmp = (errorAngle * pidProfile->P8[PIDLEVEL]) >> 4;
+            } else {
                 AngleRateTmp = ((int32_t)(rate + 27) * rcCommand[axis]) >> 4;
                 if (FLIGHT_MODE(HORIZON_MODE)) {
                     // mix up angle error to desired AngleRateTmp to add a little auto-level feel
                     AngleRateTmp += (errorAngle * pidProfile->I8[PIDLEVEL]) >> 8;
                 }
-            } else { // it's the ANGLE mode - control is angle based, so control loop is needed
-                AngleRateTmp = (errorAngle * pidProfile->P8[PIDLEVEL]) >> 4;
             }
         }
 
